@@ -132,6 +132,17 @@
     .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .control-with-shortcut {
+      display: inline-grid;
+      justify-items: center;
+      gap: 4px;
+    }
+    .control-with-shortcut > button { width: 100%; }
+    .shortcut-note {
+      display: block;
+      text-align: center;
+      line-height: 1.25;
+    }
     .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
     .kpi { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #fbfdff; }
     .kpi strong { display: block; font-size: 24px; line-height: 1.1; margin-bottom: 4px; }
@@ -186,7 +197,29 @@
       font-size: 12px;
       font-weight: 800;
     }
-    .file-input { border: 1px dashed var(--line); border-radius: 8px; padding: 12px; background: #fbfdff; }
+    .file-input {
+      position: relative;
+      display: inline-flex;
+      min-height: 38px;
+      align-items: center;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 14px;
+      background: #e8eef8;
+      color: #1f2a44;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .file-input:hover { background: #dbe5f5; }
+    .file-input input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
     .progress { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
     .progress > span { display: block; height: 100%; width: 0; background: var(--blue); }
     .card-stage { min-height: 390px; display: grid; place-items: center; padding: 16px; }
@@ -210,13 +243,39 @@
     .question { display: grid; gap: 18px; }
     .cloze { border: 1px solid var(--line); border-radius: 8px; background: #fbfdff; padding: 20px; font-size: 22px; line-height: 1.55; }
     .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .choice { min-height: 54px; background: #fff; border: 1px solid var(--line); color: var(--ink); text-align: left; }
+    .choice { min-height: 54px; background: #fff; border: 1px solid var(--line); color: var(--ink); text-align: left; display: inline-flex; align-items: center; gap: 10px; }
+    .choice-key {
+      display: inline-grid;
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      place-items: center;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .choice-word { overflow-wrap: anywhere; }
     .choice:hover { background: #eef4ff; }
     .choice:disabled { cursor: not-allowed; opacity: .78; }
     .choice:disabled:hover { background: #fff; }
     .choice.correct { background: #dcfce7; color: #14532d; border-color: #86efac; }
     .choice.wrong { background: #fee2e2; color: #7f1d1d; border-color: #fecaca; }
     .analysis-list { display: grid; gap: 14px; text-align: left; }
+    .analysis-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .analysis-head h2 { margin: 0; }
+    .analysis-filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .analysis-filter.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+      color: #1e40af;
+    }
     .analysis-card {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -299,7 +358,7 @@
         <div class="topbar-head">
           <div class="brand-line">
             <h1>SAT Vocabulary Reviewer</h1>
-            <div class="version">Version 3.0</div>
+            <div class="version">Version 3.6</div>
             <span id="vocabStatus" class="small muted">Loading vocabulary...</span>
           </div>
         </div>
@@ -374,14 +433,15 @@
           <div class="actions">
             <button id="exportProgressBtn">Export Progress JSON</button>
             <label class="file-input">Import Progress JSON
-              <input id="importProgressInput" type="file" accept="application/json">
+              <input id="importProgressInput" type="file" multiple accept=".json,application/json,text/json,*/*">
             </label>
             <label class="file-input">Import Vocabulary JSON
-              <input id="importVocabInput" type="file" accept="application/json">
+              <input id="importVocabInput" type="file" accept=".json,application/json,text/json,*/*">
             </label>
             <button id="resetProgressBtn" class="danger">Reset Local Progress</button>
           </div>
           <p id="dataStatus" class="small muted" style="margin-top: 12px;"></p>
+          <p class="small muted">Browser note: a standalone HTML file cannot silently scan nearby Progress files or write next to itself without permission. If your browser supports file-write permission, Create Plan will connect auto-save. Otherwise, use Export/Import Progress JSON. You may select multiple Progress files; the newest modified file will be imported.</p>
         </div>
       </section>
 
@@ -405,10 +465,22 @@
             </div>
           </div>
           <div id="reviewControls" class="actions">
-            <button id="flipCardBtn">Flip</button>
-            <button id="knowBtn" class="success">Know</button>
-            <button id="fuzzyBtn" class="warn">Fuzzy</button>
-            <button id="unknownBtn" class="danger">Unknown</button>
+            <div class="control-with-shortcut">
+              <button id="flipCardBtn">Flip</button>
+              <span class="muted small shortcut-note">Space</span>
+            </div>
+            <div class="control-with-shortcut">
+              <button id="knowBtn" class="success">Know</button>
+              <span class="muted small shortcut-note">1</span>
+            </div>
+            <div class="control-with-shortcut">
+              <button id="fuzzyBtn" class="warn">Fuzzy</button>
+              <span class="muted small shortcut-note">2</span>
+            </div>
+            <div class="control-with-shortcut">
+              <button id="unknownBtn" class="danger">Unknown</button>
+              <span class="muted small shortcut-note">3</span>
+            </div>
           </div>
         </div>
       </section>
@@ -427,9 +499,18 @@
             <div class="muted">Choose a day to start testing.</div>
           </div>
           <div id="testControls" class="actions" style="margin-top: 14px;">
-            <button id="prevQuestionBtn" class="secondary">Previous</button>
-            <button id="nextQuestionBtn" class="secondary">Next Question</button>
-            <button id="markUnsureBtn" class="ghost">Mark Unsure</button>
+            <div class="control-with-shortcut">
+              <button id="prevQuestionBtn" class="secondary">Previous</button>
+              <span class="muted small shortcut-note">Left Arrow</span>
+            </div>
+            <div class="control-with-shortcut">
+              <button id="nextQuestionBtn" class="secondary">Next Question</button>
+              <span class="muted small shortcut-note">Space / Right Arrow</span>
+            </div>
+            <div class="control-with-shortcut">
+              <button id="markUnsureBtn" class="ghost">Mark Unsure</button>
+              <span class="muted small shortcut-note">U</span>
+            </div>
           </div>
         </div>
       </section>
@@ -451,20 +532,102 @@
     let review = { batchId: "", index: 0, flipped: false, completedBatchId: "" };
     let test = { batchId: "", index: 0, order: [] };
     let reviewSortState = {};
+    let analysisFilterState = {};
+    let progressFileHandle = null;
+    let progressFileName = "";
+
+    function emptyState() {
+      return { activePlanId: "", activeBatchId: "", plans: [], results: {}, quizChoices: {}, unsureMarks: {} };
+    }
+
+    function normalizeState(value) {
+      const normalized = { ...emptyState(), ...value };
+      normalized.unsureMarks = normalized.unsureMarks || {};
+      for (const [key, result] of Object.entries(normalized.results || {})) {
+        if (result?.unsure) {
+          normalized.unsureMarks[key] = true;
+          delete result.unsure;
+        }
+        if (Number(result?.selectedId) === 0) delete normalized.results[key];
+      }
+      return normalized;
+    }
 
     function loadState() {
       const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (!raw) return { activePlanId: "", activeBatchId: "", plans: [], results: {}, quizChoices: {} };
+      if (!raw) return emptyState();
       try {
-        return { activePlanId: "", activeBatchId: "", plans: [], results: {}, quizChoices: {}, ...JSON.parse(raw) };
+        return normalizeState(JSON.parse(raw));
       } catch {
-        return { activePlanId: "", activeBatchId: "", plans: [], results: {}, quizChoices: {} };
+        return emptyState();
       }
     }
 
     function saveState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       renderAll();
+      queueProgressWrite();
+    }
+
+    function safeFilePart(value) {
+      return String(value || "Untitled_Plan")
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[\\/:*?"<>|]+/g, "")
+        .replace(/^_+|_+$/g, "") || "Untitled_Plan";
+    }
+
+    function progressFileNameForPlan(planName) {
+      return `Progress_${safeFilePart(planName)}.json`;
+    }
+
+    function progressPayload() {
+      return JSON.stringify({
+        ...state,
+        exportedAt: new Date().toISOString(),
+        appVersion: "3.6",
+      }, null, 2);
+    }
+
+    async function setupProgressFile(planName) {
+      progressFileName = progressFileNameForPlan(planName);
+      if (!("showSaveFilePicker" in window)) {
+        setDataStatus(`Progress is saved in this browser. This browser cannot auto-write ${progressFileName}; use Export Progress JSON to create/update that file manually.`);
+        return;
+      }
+      try {
+        progressFileHandle = await window.showSaveFilePicker({
+          suggestedName: progressFileName,
+          types: [{ description: "Progress JSON", accept: { "application/json": [".json"] } }],
+        });
+        await writeProgressFile();
+        setDataStatus(`Auto-save connected: ${progressFileName}`);
+      } catch (error) {
+        progressFileHandle = null;
+        setDataStatus(`Auto-save was not connected. Progress is still saved in this browser; use Export Progress JSON when needed.`);
+      }
+    }
+
+    let progressWriteTimer = 0;
+    function queueProgressWrite() {
+      if (!progressFileHandle) return;
+      clearTimeout(progressWriteTimer);
+      progressWriteTimer = setTimeout(() => {
+        writeProgressFile().catch(error => setDataStatus(`Auto-save failed: ${error.message}`));
+      }, 250);
+    }
+
+    async function writeProgressFile() {
+      if (!progressFileHandle) return;
+      const writable = await progressFileHandle.createWritable();
+      await writable.write(progressPayload());
+      await writable.close();
+      setDataStatus(`Progress auto-saved to ${progressFileName || "the connected JSON file"} at ${new Date().toLocaleTimeString()}.`);
+    }
+
+    function setDataStatus(message) {
+      const dataStatus = document.getElementById("dataStatus");
+      if (dataStatus) dataStatus.textContent = message;
     }
 
     async function loadVocab() {
@@ -530,7 +693,7 @@
       return score;
     }
 
-    function createPlan() {
+    async function createPlan() {
       if (!vocab.length) return alert("Vocabulary has not loaded yet.");
       const name = document.getElementById("planName").value.trim() || "Untitled Plan";
       const start = Number(document.getElementById("rangeStart").value);
@@ -565,6 +728,7 @@
       state.activePlanId = plan.id;
       state.activeBatchId = batches[0]?.id || "";
       saveState();
+      await setupProgressFile(plan.name);
     }
 
     function setActivePlan(planId) {
@@ -600,8 +764,9 @@
       const batch = selectedBatch(batchId);
       if (!batch) return;
       for (const id of batch.wordIds) {
-        delete state.results[`${batch.id}:${id}`];
+        delete state.results[resultKeyFor(batch, id)];
         delete state.quizChoices[`${batch.id}:${id}`];
+        delete state.unsureMarks?.[resultKeyFor(batch, id)];
       }
       batch.testDate = "";
       test = { batchId: batch.id, index: 0, order: [] };
@@ -661,6 +826,9 @@
       }
       list.innerHTML = state.plans.map(plan => {
         const active = plan.id === state.activePlanId ? `<span class="badge active">Active Plan</span>` : "";
+        const deleteButton = state.plans.length >= 2
+          ? `<button class="danger" data-delete-plan="${plan.id}">Delete</button>`
+          : "";
         const reviewed = plan.batches.filter(batch => batch.status === "reviewed").length;
         return `
           <div class="item">
@@ -669,7 +837,10 @@
                 <strong>${escapeHtml(plan.name)}</strong>
                 <div class="small muted">${plan.rangeStart}-${plan.rangeEnd} · ${plan.batchSize} words/day · ${reviewed}/${plan.batches.length} reviewed</div>
               </div>
-              ${active}
+              <div class="actions" style="justify-content:flex-end;">
+                ${active}
+                ${deleteButton}
+              </div>
             </div>
             <div class="batch-grid">
               ${plan.batches.map(batch => {
@@ -695,6 +866,33 @@
           </div>
         `;
       }).join("");
+    }
+
+    function deletePlan(planId) {
+      const plan = state.plans.find(item => item.id === planId);
+      if (!plan) return;
+      if (!confirm(`Delete "${plan.name}" and all progress for this plan? This cannot be undone.`)) return;
+      const batchIds = new Set(plan.batches.flatMap(batch => batch.wordIds.map(wordId => resultKeyFor(batch, wordId))));
+      for (const key of batchIds) {
+        delete state.results[key];
+        delete state.unsureMarks?.[key];
+      }
+      for (const batch of plan.batches) {
+        for (const wordId of batch.wordIds) {
+          delete state.quizChoices[`${batch.id}:${wordId}`];
+        }
+      }
+      state.plans = state.plans.filter(item => item.id !== plan.id);
+      if (state.activePlanId === plan.id) {
+        const fallbackPlan = state.plans[0];
+        state.activePlanId = fallbackPlan?.id || "";
+        state.activeBatchId = fallbackPlan?.batches[0]?.id || "";
+      } else if (plan.batches.some(batch => batch.id === state.activeBatchId)) {
+        state.activeBatchId = activePlan()?.batches[0]?.id || "";
+      }
+      review = { batchId: state.activeBatchId, index: 0, flipped: false, completedBatchId: "" };
+      test = { batchId: state.activeBatchId, index: 0, order: [] };
+      saveState();
     }
 
     function batchOptions() {
@@ -902,6 +1100,14 @@
       return { item, choices };
     }
 
+    function resultKeyFor(batch, wordId) {
+      return `${batch.id}:${wordId}`;
+    }
+
+    function isUnsureMarked(batch, wordId) {
+      return Boolean(state.unsureMarks?.[resultKeyFor(batch, wordId)]);
+    }
+
     function ensureTestOrder(batch) {
       if (test.batchId !== batch.id || !test.order.length) {
         test.batchId = batch.id;
@@ -957,36 +1163,70 @@
       test.index = clamp(test.index, 0, test.order.length - 1);
       const item = getWord(test.order[test.index]);
       const question = makeQuestion(item, batch);
-      const resultKey = `${batch.id}:${item.id}`;
+      const resultKey = resultKeyFor(batch, item.id);
       const result = state.results[resultKey];
+      const unsureMarked = isUnsureMarked(batch, item.id);
       document.getElementById("testProgress").style.width = `${((test.index + 1) / test.order.length) * 100}%`;
       document.getElementById("prevQuestionBtn").disabled = test.index <= 0;
       document.getElementById("nextQuestionBtn").disabled = !result;
+      document.getElementById("markUnsureBtn").disabled = false;
+      document.getElementById("markUnsureBtn").textContent = unsureMarked ? "Un-Mark Unsure" : "Mark Unsure";
       area.innerHTML = `
         <div class="small muted">${test.index + 1}/${test.order.length} · ${escapeHtml(item.partOfSpeech)}</div>
         <div class="cloze">${escapeHtml(item.clozeExample)}</div>
         <div class="choices">
-          ${question.choices.map(choice => {
+          ${question.choices.map((choice, choiceIndex) => {
             const cls = result ? choice.id === item.id ? "correct" : result.selectedId === choice.id ? "wrong" : "" : "";
-            return `<button class="choice ${cls}" data-choice="${choice.id}" ${result ? "disabled" : ""}>${escapeHtml(choice.word)}</button>`;
+            return `
+              <button class="choice ${cls}" data-choice="${choice.id}" ${result ? "disabled" : ""}>
+                <span class="choice-key">${choiceIndex + 1}</span>
+                <span class="choice-word">${escapeHtml(choice.word)}</span>
+              </button>
+            `;
           }).join("")}
         </div>
-        ${result ? `<div class="notice">Answer: ${escapeHtml(item.word)} · ${result.correct ? "Correct" : "Wrong"}${result.unsure ? " · Unsure" : ""}</div>` : ""}
+        ${result || unsureMarked ? `<div class="notice">${result ? `Answer: ${escapeHtml(item.word)} · ${result.correct ? "Correct" : "Wrong"}` : "No answer selected yet."}${unsureMarked ? " · Unsure" : ""}</div>` : ""}
       `;
+    }
+
+    function answerChoiceByNumber(numberKey) {
+      const batch = selectedBatch(test.batchId);
+      if (!batch) return;
+      ensureTestOrder(batch);
+      const item = getWord(test.order[test.index]);
+      if (!item || state.results[`${batch.id}:${item.id}`]) return;
+      const question = makeQuestion(item, batch);
+      const choice = question.choices[Number(numberKey) - 1];
+      if (choice) answerChoice(choice.id);
+    }
+
+    function markCurrentQuestionUnsure() {
+      const batch = selectedBatch(test.batchId);
+      if (!batch) return;
+      ensureTestOrder(batch);
+      const item = getWord(test.order[test.index]);
+      if (!item) return;
+      const key = resultKeyFor(batch, item.id);
+      state.unsureMarks = state.unsureMarks || {};
+      if (state.unsureMarks[key]) {
+        delete state.unsureMarks[key];
+      } else {
+        state.unsureMarks[key] = true;
+      }
+      saveState();
     }
 
     function answerChoice(choiceId, unsure = false) {
       const batch = selectedBatch(test.batchId);
       if (!batch) return;
       const item = getWord(test.order[test.index]);
-      const resultKey = `${batch.id}:${item.id}`;
+      const resultKey = resultKeyFor(batch, item.id);
       if (state.results[resultKey]) return;
       const selectedId = Number(choiceId);
       state.results[resultKey] = {
         selectedId,
         correctId: item.id,
         correct: selectedId === item.id,
-        unsure,
         date: today(),
       };
       batch.testDate = today();
@@ -997,7 +1237,7 @@
       const batch = selectedBatch(test.batchId);
       if (!batch) return;
       const item = getWord(test.order[test.index]);
-      if (!state.results[`${batch.id}:${item.id}`]) {
+      if (!state.results[resultKeyFor(batch, item.id)]) {
         alert("Choose an answer before moving to the next question.");
         return;
       }
@@ -1024,8 +1264,10 @@
         .filter(Boolean);
       const container = document.getElementById(`missing-words-${batch.id}`);
       if (!container) return;
+      const analysisContainer = document.getElementById(`answer-analysis-${batch.id}`);
       const willShow = container.classList.contains("hidden");
       container.classList.toggle("hidden", !willShow);
+      if (willShow && analysisContainer) analysisContainer.classList.add("hidden");
       if (!willShow) return;
       container.innerHTML = wrong.length ? `
         <h2>Missing Words</h2>
@@ -1058,20 +1300,48 @@
       if (!batch) return;
       const container = document.getElementById(`answer-analysis-${batch.id}`);
       if (!container) return;
+      const missingContainer = document.getElementById(`missing-words-${batch.id}`);
       const willShow = container.classList.contains("hidden");
       container.classList.toggle("hidden", !willShow);
+      if (willShow && missingContainer) missingContainer.classList.add("hidden");
       if (!willShow) return;
+      container.innerHTML = answerAnalysisHtml(batch);
+    }
+
+    function setAnswerAnalysisFilter(batchId, filter) {
+      const batch = selectedBatch(batchId);
+      const container = document.getElementById(`answer-analysis-${batchId}`);
+      if (!batch || !container) return;
+      analysisFilterState[batchId] = analysisFilterState[batchId] === filter ? "" : filter;
       container.innerHTML = answerAnalysisHtml(batch);
     }
 
     function answerAnalysisHtml(batch) {
       const order = test.batchId === batch.id && test.order.length ? test.order : batch.wordIds;
+      const activeFilter = analysisFilterState[batch.id] || "";
+      const filterButtons = ["correct", "wrong", "unsure"].map(filter => `
+        <button class="secondary analysis-filter ${activeFilter === filter ? "active" : ""}" data-analysis-filter="${filter}" data-analysis-filter-batch="${batch.id}">
+          ${filter[0].toUpperCase()}${filter.slice(1)}
+        </button>
+      `).join("");
+      const visibleOrder = order.filter(wordId => {
+        const result = state.results[resultKeyFor(batch, wordId)];
+        const unsureMarked = isUnsureMarked(batch, wordId);
+        if (activeFilter === "correct") return Boolean(result?.correct);
+        if (activeFilter === "wrong") return Boolean(result && !result.correct);
+        if (activeFilter === "unsure") return unsureMarked;
+        return true;
+      });
       return `
-        <h2>Answer Analysis</h2>
-        ${order.map((wordId, index) => {
+        <div class="analysis-head">
+          <h2>Answer Analysis</h2>
+          <div class="analysis-filters">${filterButtons}</div>
+        </div>
+        ${visibleOrder.length ? visibleOrder.map((wordId, index) => {
           const item = getWord(wordId);
           if (!item) return "";
-          const result = state.results[`${batch.id}:${item.id}`];
+          const result = state.results[resultKeyFor(batch, item.id)];
+          const unsureMarked = isUnsureMarked(batch, item.id);
           const question = makeQuestion(item, batch);
           const selected = result ? getWord(result.selectedId) : null;
           return `
@@ -1081,7 +1351,7 @@
               <div class="small">
                 Your answer: <strong>${escapeHtml(selected?.word || "No answer")}</strong>
                 · Correct answer: <strong>${escapeHtml(item.word)}</strong>
-                · ${result?.correct ? "Correct" : "Wrong"}${result?.unsure ? " · Unsure" : ""}
+                · ${result?.correct ? "Correct" : "Wrong"}${unsureMarked ? " · Unsure" : ""}
               </div>
               <div class="analysis-options">
                 ${question.choices.map(choice => {
@@ -1106,26 +1376,36 @@
               </div>
             </div>
           `;
-        }).join("")}
+        }).join("") : `<div class="notice">No questions match this filter.</div>`}
       `;
     }
 
     function exportProgress() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const plan = activePlan();
+      const filename = progressFileNameForPlan(plan?.name || "SAT_Vocab");
+      const blob = new Blob([progressPayload()], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `sat-vocab-progress-${today()}.json`;
+      link.download = filename;
       link.click();
       URL.revokeObjectURL(url);
+      setDataStatus(`Progress JSON exported as ${filename}.`);
     }
 
-    async function importProgress(file) {
+    async function importProgress(fileOrFiles) {
+      const files = fileOrFiles instanceof FileList || Array.isArray(fileOrFiles)
+        ? Array.from(fileOrFiles)
+        : [fileOrFiles].filter(Boolean);
+      const file = files.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0))[0];
       if (!file) return;
       const incoming = JSON.parse(await file.text());
       if (!incoming || !Array.isArray(incoming.plans)) throw new Error("Invalid progress file.");
-      state = { activePlanId: "", activeBatchId: "", plans: [], results: {}, quizChoices: {}, ...incoming };
+      state = normalizeState(incoming);
+      progressFileName = file.name || "";
+      progressFileHandle = null;
       saveState();
+      setDataStatus(`Progress imported from ${file.name}. If multiple files were selected, the most recently modified file was used.`);
     }
 
     async function importVocab(file) {
@@ -1176,12 +1456,18 @@
         if (batch && container) container.innerHTML = reviewedWordTableHtml(batch, next.key, next.dir);
         return;
       }
+      const analysisFilter = event.target.closest("[data-analysis-filter]");
+      if (analysisFilter) {
+        setAnswerAnalysisFilter(analysisFilter.dataset.analysisFilterBatch, analysisFilter.dataset.analysisFilter);
+        return;
+      }
       const target = event.target.closest("button");
       if (!target) return;
       if (target.dataset.view) switchView(target.dataset.view);
       if (target.dataset.go) switchView(target.dataset.go);
       if (target.dataset.activatePlan) setActivePlan(target.dataset.activatePlan);
       if (target.dataset.activateBatch) setActiveBatch(target.dataset.activateBatch);
+      if (target.dataset.deletePlan) deletePlan(target.dataset.deletePlan);
       if (target.dataset.reviewBatch) startReview(target.dataset.reviewBatch);
       if (target.dataset.testBatch) startTest(target.dataset.testBatch);
       if (target.dataset.reviewAgain) reviewAgain(target.dataset.reviewAgain);
@@ -1231,16 +1517,10 @@
     document.getElementById("unknownBtn").addEventListener("click", () => markReview("unknown"));
     document.getElementById("prevQuestionBtn").addEventListener("click", previousQuestion);
     document.getElementById("nextQuestionBtn").addEventListener("click", nextQuestion);
-    document.getElementById("markUnsureBtn").addEventListener("click", () => {
-      const batch = selectedBatch(test.batchId);
-      if (!batch) return;
-      const item = getWord(test.order[test.index]);
-      state.results[`${batch.id}:${item.id}`] = { selectedId: 0, correctId: item.id, correct: false, unsure: true, date: today() };
-      saveState();
-    });
+    document.getElementById("markUnsureBtn").addEventListener("click", markCurrentQuestionUnsure);
     document.getElementById("exportProgressBtn").addEventListener("click", exportProgress);
     document.getElementById("importProgressInput").addEventListener("change", event => {
-      importProgress(event.target.files[0]).catch(error => alert(error.message));
+      importProgress(event.target.files).catch(error => alert(error.message));
     });
     document.getElementById("importVocabInput").addEventListener("change", event => {
       importVocab(event.target.files[0]).catch(error => alert(error.message));
@@ -1249,19 +1529,29 @@
       if (!confirm("Reset local progress in this browser? Vocabulary files will not be deleted.")) return;
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(LEGACY_STORAGE_KEY);
+      progressFileHandle = null;
+      progressFileName = "";
       state = loadState();
       renderAll();
     });
     document.addEventListener("keydown", event => {
       if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
       if (activeView === "test") {
+        if (["1", "2", "3", "4"].includes(event.key)) {
+          event.preventDefault();
+          answerChoiceByNumber(event.key);
+        }
         if (event.key === "ArrowLeft") {
           event.preventDefault();
           previousQuestion();
         }
-        if (event.key === "ArrowRight") {
+        if (event.key === "ArrowRight" || event.key === " ") {
           event.preventDefault();
           nextQuestion();
+        }
+        if (event.key.toLowerCase() === "u") {
+          event.preventDefault();
+          document.getElementById("markUnsureBtn").click();
         }
         return;
       }
